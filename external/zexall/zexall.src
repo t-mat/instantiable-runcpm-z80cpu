@@ -193,7 +193,7 @@ tstr	macro	insn1,insn2,insn3,insn4,memop,riy,rix,rhl,rde,rbc,flags,acc,rsp,?lab
 	endm
 
 tmsg	macro	msg,?lab
-?lab:	db	'msg'
+?lab:	db	msg
 	if	$ ge ?lab+31
 	error	'message too long'
 	else
