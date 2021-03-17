@@ -32,6 +32,7 @@ const char* iLogTxt;
 /*
 	Functions needed by the soft CPU implementation
 */
+#if !defined(INSTANTIABLE_CPU_IN_OUT_DEFINED)
 void cpu_out(const uint32 Port, const uint32 Value) {
 	_Bios();
 }
@@ -40,6 +41,7 @@ uint32 cpu_in(const uint32 Port) {
 	_Bdos();
 	return(HIGH_REGISTER(AF));
 }
+#endif
 
 /* Z80 Custom soft core */
 
@@ -118,7 +120,7 @@ cpTable[i]              0..255  (i & 0x80) | (((i & 0xff) == 0) << 6)
 */
 
 /* parityTable[i] = (number of 1's in i is odd) ? 0 : 4, i = 0..255 */
-static const uint8 parityTable[256] = {
+INSTANTIABLE_CPU_INLINE static const uint8 parityTable[256] = {
 	4,0,0,4,0,4,4,0,0,4,4,0,4,0,0,4,
 	0,4,4,0,4,0,0,4,4,0,0,4,0,4,4,0,
 	0,4,4,0,4,0,0,4,4,0,0,4,0,4,4,0,
@@ -138,7 +140,7 @@ static const uint8 parityTable[256] = {
 };
 
 /* incTable[i] = (i & 0xa8) | (((i & 0xff) == 0) << 6) | (((i & 0xf) == 0) << 4), i = 0..256 */
-static const uint8 incTable[257] = {
+INSTANTIABLE_CPU_INLINE static const uint8 incTable[257] = {
 	80,  0,  0,  0,  0,  0,  0,  0,  8,  8,  8,  8,  8,  8,  8,  8,
 	16,  0,  0,  0,  0,  0,  0,  0,  8,  8,  8,  8,  8,  8,  8,  8,
 	48, 32, 32, 32, 32, 32, 32, 32, 40, 40, 40, 40, 40, 40, 40, 40,
@@ -158,7 +160,7 @@ static const uint8 incTable[257] = {
 };
 
 /* decTable[i] = (i & 0xa8) | (((i & 0xff) == 0) << 6) | (((i & 0xf) == 0xf) << 4) | 2, i = 0..255 */
-static const uint8 decTable[256] = {
+INSTANTIABLE_CPU_INLINE static const uint8 decTable[256] = {
 	66,  2,  2,  2,  2,  2,  2,  2, 10, 10, 10, 10, 10, 10, 10, 26,
 	2,  2,  2,  2,  2,  2,  2,  2, 10, 10, 10, 10, 10, 10, 10, 26,
 	34, 34, 34, 34, 34, 34, 34, 34, 42, 42, 42, 42, 42, 42, 42, 58,
@@ -178,7 +180,7 @@ static const uint8 decTable[256] = {
 };
 
 /* cbitsTable[i] = (i & 0x10) | ((i >> 8) & 1), i = 0..511 */
-static const uint8 cbitsTable[512] = {
+INSTANTIABLE_CPU_INLINE static const uint8 cbitsTable[512] = {
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 	16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -214,7 +216,7 @@ static const uint8 cbitsTable[512] = {
 };
 
 /* cbitsDup8Table[i] = (i & 0x10) | ((i >> 8) & 1) | ((i & 0xff) << 8) | (i & 0xa8) | (((i & 0xff) == 0) << 6), i = 0..511 */
-static const uint16 cbitsDup8Table[512] = {
+INSTANTIABLE_CPU_INLINE static const uint16 cbitsDup8Table[512] = {
 	0x0040,0x0100,0x0200,0x0300,0x0400,0x0500,0x0600,0x0700,
 	0x0808,0x0908,0x0a08,0x0b08,0x0c08,0x0d08,0x0e08,0x0f08,
 	0x1010,0x1110,0x1210,0x1310,0x1410,0x1510,0x1610,0x1710,
@@ -282,7 +284,7 @@ static const uint16 cbitsDup8Table[512] = {
 };
 
 /* cbitsDup16Table[i] = (i & 0x10) | ((i >> 8) & 1) | (i & 0x28), i = 0..511 */
-static const uint8 cbitsDup16Table[512] = {
+INSTANTIABLE_CPU_INLINE static const uint8 cbitsDup16Table[512] = {
 	0, 0, 0, 0, 0, 0, 0, 0, 8, 8, 8, 8, 8, 8, 8, 8,
 	16,16,16,16,16,16,16,16,24,24,24,24,24,24,24,24,
 	32,32,32,32,32,32,32,32,40,40,40,40,40,40,40,40,
@@ -318,7 +320,7 @@ static const uint8 cbitsDup16Table[512] = {
 };
 
 /* cbits2Table[i] = (i & 0x10) | ((i >> 8) & 1) | 2, i = 0..511 */
-static const uint8 cbits2Table[512] = {
+INSTANTIABLE_CPU_INLINE static const uint8 cbits2Table[512] = {
 	2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
 	18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,
 	2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
@@ -354,7 +356,7 @@ static const uint8 cbits2Table[512] = {
 };
 
 /* rrcaTable[i] = ((i & 1) << 15) | ((i >> 1) << 8) | ((i >> 1) & 0x28) | (i & 1), i = 0..255 */
-static const uint16 rrcaTable[256] = {
+INSTANTIABLE_CPU_INLINE static const uint16 rrcaTable[256] = {
 	0x0000,0x8001,0x0100,0x8101,0x0200,0x8201,0x0300,0x8301,
 	0x0400,0x8401,0x0500,0x8501,0x0600,0x8601,0x0700,0x8701,
 	0x0808,0x8809,0x0908,0x8909,0x0a08,0x8a09,0x0b08,0x8b09,
@@ -390,7 +392,7 @@ static const uint16 rrcaTable[256] = {
 };
 
 /* rraTable[i] = ((i >> 1) << 8) | ((i >> 1) & 0x28) | (i & 1), i = 0..255 */
-static const uint16 rraTable[256] = {
+INSTANTIABLE_CPU_INLINE static const uint16 rraTable[256] = {
 	0x0000,0x0001,0x0100,0x0101,0x0200,0x0201,0x0300,0x0301,
 	0x0400,0x0401,0x0500,0x0501,0x0600,0x0601,0x0700,0x0701,
 	0x0808,0x0809,0x0908,0x0909,0x0a08,0x0a09,0x0b08,0x0b09,
@@ -426,7 +428,7 @@ static const uint16 rraTable[256] = {
 };
 
 /* addTable[i] = ((i & 0xff) << 8) | (i & 0xa8) | (((i & 0xff) == 0) << 6), i = 0..511 */
-static const uint16 addTable[512] = {
+INSTANTIABLE_CPU_INLINE static const uint16 addTable[512] = {
 	0x0040,0x0100,0x0200,0x0300,0x0400,0x0500,0x0600,0x0700,
 	0x0808,0x0908,0x0a08,0x0b08,0x0c08,0x0d08,0x0e08,0x0f08,
 	0x1000,0x1100,0x1200,0x1300,0x1400,0x1500,0x1600,0x1700,
@@ -494,7 +496,7 @@ static const uint16 addTable[512] = {
 };
 
 /* subTable[i] = ((i & 0xff) << 8) | (i & 0xa8) | (((i & 0xff) == 0) << 6) | 2, i = 0..255 */
-static const uint16 subTable[256] = {
+INSTANTIABLE_CPU_INLINE static const uint16 subTable[256] = {
 	0x0042,0x0102,0x0202,0x0302,0x0402,0x0502,0x0602,0x0702,
 	0x080a,0x090a,0x0a0a,0x0b0a,0x0c0a,0x0d0a,0x0e0a,0x0f0a,
 	0x1002,0x1102,0x1202,0x1302,0x1402,0x1502,0x1602,0x1702,
@@ -530,7 +532,7 @@ static const uint16 subTable[256] = {
 };
 
 /* andTable[i] = (i << 8) | (i & 0xa8) | ((i == 0) << 6) | 0x10 | parityTable[i], i = 0..255 */
-static const uint16 andTable[256] = {
+INSTANTIABLE_CPU_INLINE static const uint16 andTable[256] = {
 	0x0054,0x0110,0x0210,0x0314,0x0410,0x0514,0x0614,0x0710,
 	0x0818,0x091c,0x0a1c,0x0b18,0x0c1c,0x0d18,0x0e18,0x0f1c,
 	0x1010,0x1114,0x1214,0x1310,0x1414,0x1510,0x1610,0x1714,
@@ -566,7 +568,7 @@ static const uint16 andTable[256] = {
 };
 
 /* xororTable[i] = (i << 8) | (i & 0xa8) | ((i == 0) << 6) | parityTable[i], i = 0..255 */
-static const uint16 xororTable[256] = {
+INSTANTIABLE_CPU_INLINE static const uint16 xororTable[256] = {
 	0x0044,0x0100,0x0200,0x0304,0x0400,0x0504,0x0604,0x0700,
 	0x0808,0x090c,0x0a0c,0x0b08,0x0c0c,0x0d08,0x0e08,0x0f0c,
 	0x1000,0x1104,0x1204,0x1300,0x1404,0x1500,0x1600,0x1704,
@@ -602,7 +604,7 @@ static const uint16 xororTable[256] = {
 };
 
 /* rotateShiftTable[i] = (i & 0xa8) | (((i & 0xff) == 0) << 6) | parityTable[i & 0xff], i = 0..255 */
-static const uint8 rotateShiftTable[256] = {
+INSTANTIABLE_CPU_INLINE static const uint8 rotateShiftTable[256] = {
 	68,  0,  0,  4,  0,  4,  4,  0,  8, 12, 12,  8, 12,  8,  8, 12,
 	0,  4,  4,  0,  4,  0,  0,  4, 12,  8,  8, 12,  8, 12, 12,  8,
 	32, 36, 36, 32, 36, 32, 32, 36, 44, 40, 40, 44, 40, 44, 44, 40,
@@ -622,7 +624,7 @@ static const uint8 rotateShiftTable[256] = {
 };
 
 /* incZ80Table[i] = (i & 0xa8) | (((i & 0xff) == 0) << 6) | (((i & 0xf) == 0) << 4) | ((i == 0x80) << 2), i = 0..256 */
-static const uint8 incZ80Table[257] = {
+INSTANTIABLE_CPU_INLINE static const uint8 incZ80Table[257] = {
 	80,  0,  0,  0,  0,  0,  0,  0,  8,  8,  8,  8,  8,  8,  8,  8,
 	16,  0,  0,  0,  0,  0,  0,  0,  8,  8,  8,  8,  8,  8,  8,  8,
 	48, 32, 32, 32, 32, 32, 32, 32, 40, 40, 40, 40, 40, 40, 40, 40,
@@ -642,7 +644,7 @@ static const uint8 incZ80Table[257] = {
 };
 
 /* decZ80Table[i] = (i & 0xa8) | (((i & 0xff) == 0) << 6) | (((i & 0xf) == 0xf) << 4) | ((i == 0x7f) << 2) | 2, i = 0..255 */
-static const uint8 decZ80Table[256] = {
+INSTANTIABLE_CPU_INLINE static const uint8 decZ80Table[256] = {
 	66,  2,  2,  2,  2,  2,  2,  2, 10, 10, 10, 10, 10, 10, 10, 26,
 	2,  2,  2,  2,  2,  2,  2,  2, 10, 10, 10, 10, 10, 10, 10, 26,
 	34, 34, 34, 34, 34, 34, 34, 34, 42, 42, 42, 42, 42, 42, 42, 58,
@@ -662,7 +664,7 @@ static const uint8 decZ80Table[256] = {
 };
 
 /* cbitsZ80Table[i] = (i & 0x10) | (((i >> 6) ^ (i >> 5)) & 4) | ((i >> 8) & 1), i = 0..511 */
-static const uint8 cbitsZ80Table[512] = {
+INSTANTIABLE_CPU_INLINE static const uint8 cbitsZ80Table[512] = {
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 	16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -698,7 +700,7 @@ static const uint8 cbitsZ80Table[512] = {
 };
 
 /* cbitsZ80DupTable[i] = (i & 0x10) | (((i >> 6) ^ (i >> 5)) & 4) | ((i >> 8) & 1) | (i & 0xa8), i = 0..511 */
-static const uint8 cbitsZ80DupTable[512] = {
+INSTANTIABLE_CPU_INLINE static const uint8 cbitsZ80DupTable[512] = {
 	0,  0,  0,  0,  0,  0,  0,  0,  8,  8,  8,  8,  8,  8,  8,  8,
 	16, 16, 16, 16, 16, 16, 16, 16, 24, 24, 24, 24, 24, 24, 24, 24,
 	32, 32, 32, 32, 32, 32, 32, 32, 40, 40, 40, 40, 40, 40, 40, 40,
@@ -734,7 +736,7 @@ static const uint8 cbitsZ80DupTable[512] = {
 };
 
 /* cbits2Z80Table[i] = (i & 0x10) | (((i >> 6) ^ (i >> 5)) & 4) | ((i >> 8) & 1) | 2, i = 0..511 */
-static const uint8 cbits2Z80Table[512] = {
+INSTANTIABLE_CPU_INLINE static const uint8 cbits2Z80Table[512] = {
 	2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
 	18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,
 	2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
@@ -770,7 +772,7 @@ static const uint8 cbits2Z80Table[512] = {
 };
 
 /* cbits2Z80DupTable[i] = (i & 0x10) | (((i >> 6) ^ (i >> 5)) & 4) | ((i >> 8) & 1) | 2 | (i & 0xa8), i = 0..511 */
-static const uint8 cbits2Z80DupTable[512] = {
+INSTANTIABLE_CPU_INLINE static const uint8 cbits2Z80DupTable[512] = {
 	2,  2,  2,  2,  2,  2,  2,  2, 10, 10, 10, 10, 10, 10, 10, 10,
 	18, 18, 18, 18, 18, 18, 18, 18, 26, 26, 26, 26, 26, 26, 26, 26,
 	34, 34, 34, 34, 34, 34, 34, 34, 42, 42, 42, 42, 42, 42, 42, 42,
@@ -806,7 +808,7 @@ static const uint8 cbits2Z80DupTable[512] = {
 };
 
 /* negTable[i] = (((i & 0x0f) != 0) << 4) | ((i == 0x80) << 2) | 2 | (i != 0), i = 0..255 */
-static const uint8 negTable[256] = {
+INSTANTIABLE_CPU_INLINE static const uint8 negTable[256] = {
 	2,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,
 	3,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,
 	3,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,
@@ -826,7 +828,7 @@ static const uint8 negTable[256] = {
 };
 
 /* rrdrldTable[i] = (i << 8) | (i & 0xa8) | (((i & 0xff) == 0) << 6) | parityTable[i], i = 0..255 */
-static const uint16 rrdrldTable[256] = {
+INSTANTIABLE_CPU_INLINE static const uint16 rrdrldTable[256] = {
 	0x0044,0x0100,0x0200,0x0304,0x0400,0x0504,0x0604,0x0700,
 	0x0808,0x090c,0x0a0c,0x0b08,0x0c0c,0x0d08,0x0e08,0x0f0c,
 	0x1000,0x1104,0x1204,0x1300,0x1404,0x1500,0x1600,0x1704,
@@ -862,7 +864,7 @@ static const uint16 rrdrldTable[256] = {
 };
 
 /* cpTable[i] = (i & 0x80) | (((i & 0xff) == 0) << 6), i = 0..255 */
-static const uint8 cpTable[256] = {
+INSTANTIABLE_CPU_INLINE static const uint8 cpTable[256] = {
 	64,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
 	0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
 	0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
@@ -882,7 +884,7 @@ static const uint8 cpTable[256] = {
 };
 
 #if defined(DEBUG) || defined(iDEBUG)
-static const char* Mnemonics[256] =
+INSTANTIABLE_CPU_INLINE static const char* Mnemonics[256] =
 {
 	"NOP", "LD BC,#h", "LD (BC),A", "INC BC", "INC B", "DEC B", "LD B,*h", "RLCA",
 	"EX AF,AF'", "ADD HL,BC", "LD A,(BC)", "DEC BC", "INC C", "DEC C", "LD C,*h", "RRCA",
@@ -918,7 +920,7 @@ static const char* Mnemonics[256] =
 	"RET M", "LD SP,HL", "JP M,#h", "EI", "CALL M,#h", "PFX_FD", "CP *h", "RST 38h"
 };
 
-static const char* MnemonicsCB[256] =
+INSTANTIABLE_CPU_INLINE static const char* MnemonicsCB[256] =
 {
 	"RLC B", "RLC C", "RLC D", "RLC E", "RLC H", "RLC L", "RLC (HL)", "RLC A",
 	"RRC B", "RRC C", "RRC D", "RRC E", "RRC H", "RRC L", "RRC (HL)", "RRC A",
@@ -954,7 +956,7 @@ static const char* MnemonicsCB[256] =
 	"SET 7,B", "SET 7,C", "SET 7,D", "SET 7,E", "SET 7,H", "SET 7,L", "SET 7,(HL)", "SET 7,A"
 };
 
-static const char* MnemonicsED[256] =
+INSTANTIABLE_CPU_INLINE static const char* MnemonicsED[256] =
 {
 	"DB EDh,00h", "DB EDh,01h", "DB EDh,02h", "DB EDh,03h",
 	"DB EDh,04h", "DB EDh,05h", "DB EDh,06h", "DB EDh,07h",
@@ -1022,7 +1024,7 @@ static const char* MnemonicsED[256] =
 	"DB EDh,FCh", "DB EDh,FDh", "DB EDh,FEh", "DB EDh,FFh"
 };
 
-static const char* MnemonicsXX[256] =
+INSTANTIABLE_CPU_INLINE static const char* MnemonicsXX[256] =
 {
 	"NOP", "LD BC,#h", "LD (BC),A", "INC BC", "INC B", "DEC B", "LD B,*h", "RLCA",
 	"EX AF,AF'", "ADD I%,BC", "LD A,(BC)", "DEC BC", "INC C", "DEC C", "LD C,*h", "RRCA",
@@ -1058,7 +1060,7 @@ static const char* MnemonicsXX[256] =
 	"RET M", "LD SP,I%", "JP M,#h", "EI", "CALL M,#h", "PFX_FD", "CP *h", "RST 38h"
 };
 
-static const char* MnemonicsXCB[256] =
+INSTANTIABLE_CPU_INLINE static const char* MnemonicsXCB[256] =
 {
 	"RLC B", "RLC C", "RLC D", "RLC E", "RLC H", "RLC L", "RLC (I%@h)", "RLC A",
 	"RRC B", "RRC C", "RRC D", "RRC E", "RRC H", "RRC L", "RRC (I%@h)", "RRC A",
@@ -1094,7 +1096,7 @@ static const char* MnemonicsXCB[256] =
 	"SET 7,B", "SET 7,C", "SET 7,D", "SET 7,E", "SET 7,H", "SET 7,L", "SET 7,(I%@h)", "SET 7,A"
 };
 
-static const char* CPMCalls[41] =
+INSTANTIABLE_CPU_INLINE static const char* CPMCalls[41] =
 {
 	"System Reset", "Console Input", "Console Output", "Reader Input", "Punch Output", "List Output", "Direct I/O", "Get IOByte",
 	"Set IOByte", "Print String", "Read Buffered", "Console Status", "Get Version", "Reset Disk", "Select Disk", "Open File",
@@ -1107,19 +1109,19 @@ int32 Watch = -1;
 #endif
 
 /* Memory management    */
-static uint8 GET_BYTE(register uint32 Addr) {
+INSTANTIABLE_CPU_NON_PUBLIC(static) uint8 GET_BYTE(register uint32 Addr) {
 	return _RamRead(Addr & ADDRMASK);
 }
 
-static void PUT_BYTE(register uint32 Addr, register uint32 Value) {
+INSTANTIABLE_CPU_NON_PUBLIC(static) void PUT_BYTE(register uint32 Addr, register uint32 Value) {
 	_RamWrite(Addr & ADDRMASK, Value);
 }
 
-static uint16 GET_WORD(register uint32 a) {
+INSTANTIABLE_CPU_NON_PUBLIC(static) uint16 GET_WORD(register uint32 a) {
 	return GET_BYTE(a) | (GET_BYTE(a + 1) << 8);
 }
 
-static void PUT_WORD(register uint32 Addr, register uint32 Value) {
+INSTANTIABLE_CPU_NON_PUBLIC(static) void PUT_WORD(register uint32 Addr, register uint32 Value) {
 	_RamWrite(Addr, Value);
 	_RamWrite(++Addr, Value >> 8);
 }
@@ -1163,7 +1165,7 @@ x == (C - 1) & 0xff for IND
 #define INOUTFLAGS_NONZERO(x)                                           \
     INOUTFLAGS((HIGH_REGISTER(BC) & 0xa8) | ((HIGH_REGISTER(BC) == 0) << 6), x)
 
-static inline void Z80reset(void) {
+INSTANTIABLE_CPU_NON_PUBLIC(static) inline void Z80reset(void) {
 	PC = 0;
 	IFF = 0;
 	IR = 0;
@@ -1442,7 +1444,7 @@ void Z80debug(void) {
 }
 #endif
 
-static inline void Z80run(void) {
+INSTANTIABLE_CPU_NON_PUBLIC(static) inline void Z80run(void) {
 	register uint32 temp = 0;
 	register uint32 acu;
 	register uint32 sum;
