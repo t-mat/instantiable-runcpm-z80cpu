@@ -1472,6 +1472,10 @@ INSTANTIABLE_CPU_NON_PUBLIC(static) inline void Z80run(void) {
 
 		PCX = PC;
 
+#if defined(INSTANTIABLE_CPU_Z80RUN_CALLBACK)
+		Z80run_callback();
+#endif
+
 #ifdef iDEBUG
 		iLogFile = fopen("iDump.log", "a");
 		switch (RAM[PCX & 0xffff]) {
