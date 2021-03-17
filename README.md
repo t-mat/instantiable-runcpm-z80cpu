@@ -1,4 +1,13 @@
-﻿## Building
+﻿# Instantiable RunCPM/cpu.h Z80 CPU emulator
+
+This is a modified version of `cpu.h` from [RunCPM](MockbaTheBorg/RunCPM) which emulates Z80 CPU.
+
+The point of modifiation is `struct` (`class`) which allows to instantiate multiple CPU cores in a single process.
+
+Since my purpose is verification of Z80 emulator, I also include [`zexall.com`](http://mdfs.net/Software/Z80/Exerciser/).
+
+
+## Building
 
 - g++
 
