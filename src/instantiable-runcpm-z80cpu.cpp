@@ -84,7 +84,12 @@ struct RunCpmCpu {
         ramStore(bdosAddr, picoBdos, sizeof(picoBdos));
     }
 
+    int callbackCounter = 0;
+
     void Z80run_callback() {
+        if((++callbackCounter % (1024 * 1024 * 64)) == 0) {
+            printf("PC=%04X, SP=%04X, AF=%04X, BC=%04X, DE=%04X, HL=%04X\n", PCX, SP, AF, BC, DE, HL);
+        }
     }
 
     void _RamLoad(const char* filename, uint16_t address) {
