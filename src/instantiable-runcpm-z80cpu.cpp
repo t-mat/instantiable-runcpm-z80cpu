@@ -1,4 +1,8 @@
-﻿// g++ -std=c++17 main.cpp
+﻿// Instantiable RunCPM Z80 CPU
+// Copyright (C) 2021, Takayuki Matsuoka.
+// SPDX-License-Identifier: MIT
+// ----
+// g++ -std=c++17 main.cpp
 // ./a.out zexall.com
 #if defined(_MSC_VER)
 #define _CRT_SECURE_NO_WARNINGS
@@ -6,150 +10,123 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <assert.h>
+#include <memory>
+#include <functional>
 
-struct RunCpmCpu {
-    const uint8_t IO_char = 0xf2;
+#include "runcpm_cpu.hpp"
 
-    uint8_t RAM[65536];
+void setupMinimumBdosForZexall(uint16_t bdosAddr, uint8_t IO_char, const std::function<void(uint16_t, uint8_t)>& memWrite) {
+	const uint8_t boot[] = {
+			            //  .org 0x0000
+		0x3e, 0x24,     // ld   a,0x24
+		0xD3, IO_char,  // out  (IO_char),a
+		0x76,           // halt
+		0xc3,			// jp   bdosAddr
+		static_cast<uint8_t>(bdosAddr & 0xff),
+		static_cast<uint8_t>(bdosAddr >> 8),
+	};
 
-    uint8_t* _RamSysAddr(uint16_t address) {
-        return &RAM[address];
-    }
+	const uint8_t picoBdos[] = {
+			            //  .org 0xfc00
+		0x79,           //      ld  a,c
+		0xFE, 0x09,     //      cp  0x09
+		0x28, 0x04,     //      jr  z,WRITESTR
+		0x7B,           //      ld  a,e
+		0xD3, IO_char,  //      out (IO_char),a
+		0xC9,           //      ret
+			            // WRITESTR:
+		0xEB,           //      ex de,hl
+			            // LP:
+		0x7E,           //      ld  a,(hl)
+		0xFE, 0x24,     //      cp  0x24
+		0xC8,           //      ret z
+		0xD3, IO_char,  //      out (IO_char),a
+		0x23,           //      inc hl
+		0x18, 0xF7      //      jr  LP
+	};
 
-    uint8_t _RamRead(uint16_t address) {
-        return *_RamSysAddr(address);
-    }
+	for(int i = 0; i < std::ssize(boot); ++i) { memWrite(i, boot[i]); }
+	for(int i = 0; i < std::ssize(picoBdos); ++i) { memWrite(bdosAddr + i, picoBdos[i]); }
+}
 
-    uint16_t _RamRead16(uint16_t address) {
-        return _RamRead(address) + _RamRead(address + 1) * 256;
-    }
 
-    void _RamWrite(uint16_t address, uint8_t value) {
-        *_RamSysAddr(address) = value;
-    }
+// Example computer system which connects CPU, RAM and I/O ports.
+struct MySystem {
+	MySystem() {
+		ram.resize(64*1024);
+		cpu.memRead 	= [&](uint16_t addr) { return memRead(addr); };
+		cpu.memWrite	= [&](uint16_t addr, uint8_t data) { memWrite(addr, data); };
+		cpu.ioInp 		= [&](uint16_t addr) { return ioInp(addr); };
+		cpu.ioOut 		= [&](uint16_t addr, uint8_t data) { ioOut(addr, data); };
+		cpu.reset();
+		setupMinimumBdosForZexall(0xfc00, IO_char, [&](uint16_t addr, uint8_t data) { memWrite(addr, data); });
+	}
 
-    void _RamWrite16(uint16_t address, uint16_t value) {
-        _RamWrite(address, value & 0xff);
-        _RamWrite(address + 1, (value >> 8) & 0xff);
-    }
+	void loadCimFile(uint16_t addr, const uint8_t* file, size_t fileSizeInBytes) {
+		loadData(addr, file, fileSizeInBytes);
+		RunCpmCpu::CpuStatus s = cpu.getCpuStatus();
+		s.PC = addr;
+		cpu.setCpuStatus(s);
+	}
 
-    void ramStore(uint16_t address, const uint8_t* src, size_t srcSizeInBytes) {
-        for(size_t i = 0; i < srcSizeInBytes; ++i) {
-            _RamWrite(static_cast<uint16_t>(address + i), src[i]);
-        }
-    }
+	void loadData(uint16_t addr, const uint8_t* data, size_t dataSizeInBytes) {
+		for(size_t i = 0; i < dataSizeInBytes; ++i) {
+			memWrite(static_cast<uint16_t>(addr + i), data[i]);
+		}
+	}
 
-    void cpu_out(uint32_t port, uint32_t value) {
-        if(port == IO_char) {
-            putchar(value);
-        }
-    }
+	uint8_t memRead(uint16_t addr) {
+		return ram[addr];
+	}
 
-    uint32_t cpu_in(uint32_t port) {
-        return(HIGH_REGISTER(AF));
-    }
+	void memWrite(uint16_t addr, uint8_t data) {
+		ram[addr] = data;
+	}
 
-    void setupPicoBdos() {
-        const uint16_t bdosAddr = 0xfc00;
+	uint8_t ioInp(uint16_t addr) {
+		return 0;
+	}
 
-        const uint8_t boot[] = {
-            0x3e, 0x24,     // ld   a,0x24
-            0xD3, IO_char,  // out  (IO_char),a
-            0x76,           // halt
-            0xc3,
-            bdosAddr & 0xff,
-            bdosAddr >> 8,
-        };
+	void ioOut(uint16_t addr, uint8_t data) {
+	    if(addr == IO_char) {
+	        putchar(data);
+	    }
+	}
 
-        const uint8_t picoBdos[] = {
-                            //  .org 0xfc00
-            0x79,           //      ld  a,c
-            0xFE, 0x09,     //      cp  0x09
-            0x28, 0x04,     //      jr  z,WRITESTR
-            0x7B,           //      ld  a,e
-            0xD3, IO_char,  //      out (IO_char),a
-            0xC9,           //      ret
-                            // WRITESTR:
-            0xEB,           //      ex de,hl
-                            // LP:
-            0x7E,           //      ld  a,(hl)
-            0xFE, 0x24,     //      cp  0x24
-            0xC8,           //      ret z
-            0xD3, IO_char,  //      out (IO_char),a
-            0x23,           //      inc hl
-            0x18, 0xF7      //      jr  LP
-        };
+	void runSingleCycle() {
+	    if((callbackCounter % (1024 * 1024 * 64)) == 0) {
+			const auto s = cpu.getCpuStatus();
+	        printf("Cycle=%16zd, PC=%04X, SP=%04X, AF=%04X, BC=%04X, DE=%04X, HL=%04X\n", callbackCounter, s.PC, s.SP, s.AF, s.BC, s.DE, s.HL);
+	    }
+		cpu.runSingleCycle();
+		++callbackCounter;
+		isHalt = (cpu.getCpuStatus().getHALT() != 0);
+	}
 
-        ramStore(0, boot, sizeof(boot));
-        ramStore(bdosAddr, picoBdos, sizeof(picoBdos));
-    }
+	RunCpmCpu::CpuStatus getCpuStatus() const {
+		return cpu.getCpuStatus();
+	}
 
-    int callbackCounter = 0;
-
-    void Z80run_callback() {
-        if((++callbackCounter % (1024 * 1024 * 64)) == 0) {
-            printf("PC=%04X, SP=%04X, AF=%04X, BC=%04X, DE=%04X, HL=%04X\n", PCX, SP, AF, BC, DE, HL);
-        }
-    }
-
-    void _RamLoad(const char* filename, uint16_t address) {
-        if(FILE* fp = fopen(filename, "rb")) {
-            fseek(fp, 0, SEEK_END);
-            const long l = ftell(fp);
-            fseek(fp, 0, SEEK_SET);
-            const auto r = fread(_RamSysAddr(address), 1, l, fp);
-            assert(l == r);
-            fclose(fp);
-        }
-    }
-
-    uint8_t LOW_DIGIT(uint32_t x) { return x & 0xf; }
-    uint8_t HIGH_DIGIT(uint32_t x) { return (((x) >> 4) & 0xf); }
-    uint8_t LOW_REGISTER(uint32_t x) { return ((x) & 0xff); }
-    uint8_t HIGH_REGISTER(uint32_t x) { return (((x) >> 8) & 0xff); }
-
-    #if defined(_MSC_VER)
-    #pragma warning(push)
-    #pragma warning(disable : 5033)
-    #endif
-    #define SET_LOW_REGISTER(x, v)  x = (((x) & 0xff00) | ((v) & 0xff))
-    #define SET_HIGH_REGISTER(x, v) x = (((x) & 0xff) | (((v) & 0xff) << 8))
-
-    void SetA(uint8_t v) { SET_HIGH_REGISTER(AF, v); }
-    void SetF(uint8_t v) { SET_LOW_REGISTER (AF, v); }
-    void SetB(uint8_t v) { SET_HIGH_REGISTER(BC, v); }
-    void SetC(uint8_t v) { SET_LOW_REGISTER (BC, v); }
-    void SetD(uint8_t v) { SET_HIGH_REGISTER(DE, v); }
-    void SetE(uint8_t v) { SET_LOW_REGISTER (DE, v); }
-    void SetH(uint8_t v) { SET_HIGH_REGISTER(HL, v); }
-    void SetL(uint8_t v) { SET_LOW_REGISTER (HL, v); }
-
-    #define INSTANTIABLE_CPU_IN_OUT_DEFINED 1
-    #define INSTANTIABLE_CPU_Z80RUN_CALLBACK 1
-    #define INSTANTIABLE_CPU_INLINE inline
-    #define INSTANTIABLE_CPU_NON_PUBLIC(x)
-    #define register
-
-    using int8 = int8_t;
-    using uint8 = uint8_t;
-    using int16 = int16_t;
-    using uint16 = uint16_t;
-    using int32 = int32_t;
-    using uint32 = uint32_t;
-
-    #include "runcpm/cpu.h"
-
-    #undef register
-    #undef INSTANTIABLE_CPU_NON_PUBLIC
-    #undef INSTANTIABLE_CPU_INLINE
-    #undef INSTANTIABLE_CPU_Z80RUN_CALLBACK
-    #undef INSTANTIABLE_CPU_IN_OUT_DEFINED
-    #undef SET_HIGH_REGISTER
-    #undef SET_LOW_REGISTER
-    #if defined(_MSC_VER)
-    #pragma warning(pop)
-    #endif
+	RunCpmCpu::Cpu cpu;
+	std::vector<uint8_t> ram;
+	int64_t callbackCounter = 0;
+	bool isHalt = false;
+	const uint8_t IO_char = 0xf2;
 };
+
+
+std::vector<uint8_t> loadFile(const char* filename) {
+	std::vector<uint8_t> buf;
+	if(FILE* fp = fopen(filename, "rb")) {
+	    fseek(fp, 0, SEEK_END);
+		buf.resize(ftell(fp));
+	    fseek(fp, 0, SEEK_SET);
+	    const auto r = fread(buf.data(), 1, buf.size(), fp);
+	    fclose(fp);
+	}
+	return buf;
+}
+
 
 int main(int argc, const char** argv) {
     const char* zexallFilename = "external/zexall/zexall.com";
@@ -157,11 +134,11 @@ int main(int argc, const char** argv) {
         zexallFilename = argv[i];
     }
 
-    RunCpmCpu cpu;
-    cpu.Status = 0;
-    cpu._RamLoad(zexallFilename, 0x0100);
-    cpu.setupPicoBdos();
-    cpu.Z80reset();
-    cpu.PC = 0x0100;
-    cpu.Z80run();
+	const std::vector<uint8_t> zexallFile = loadFile(zexallFilename);
+
+	MySystem s;
+	s.loadCimFile(0x0100, zexallFile.data(), zexallFile.size());
+	while(! s.isHalt) {
+		s.runSingleCycle();
+	}
 }
