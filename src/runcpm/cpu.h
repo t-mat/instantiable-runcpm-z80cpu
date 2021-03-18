@@ -18,6 +18,9 @@ int32 DE1; /* alternate DE register                        */
 int32 HL1; /* alternate HL register                        */
 int32 IFF; /* Interrupt Flip Flop                          */
 int32 IR;  /* Interrupt (upper) / Refresh (lower) register */
+int32 IM;  /* Interrupt mode */
+int32 HALT; /* Halt */
+int32 EI_Delay = 0; /* Indicates EI single instruction delay (See Z80 User's Manual - INTERRUPT RESPONSE) */
 int32 Status = 0; /* Status of the CPU 0=running 1=end request 2=back to CCP */
 int32 Debug = 0;
 int32 Break = -1;
@@ -1169,6 +1172,9 @@ INSTANTIABLE_CPU_NON_PUBLIC(static) inline void Z80reset(void) {
 	PC = 0;
 	IFF = 0;
 	IR = 0;
+	IM = 0;
+	HALT = 0;
+	EI_Delay = 0;
 	Status = 0;
 	Debug = 0;
 	Break = -1;
@@ -1452,6 +1458,10 @@ INSTANTIABLE_CPU_NON_PUBLIC(static) inline void Z80run(void) {
 	register uint32 op;
 	register uint32 adr;
 
+#if defined(INSTANTIABLE_CPU_Z80RUN_SINGLE_CYCLE)
+	bool INSTANTIABLE_firstCycle = true;
+#endif
+
 	/* main instruction fetch/decode loop */
 	while (!Status) {	/* loop until Status != 0 */
 
@@ -1472,8 +1482,11 @@ INSTANTIABLE_CPU_NON_PUBLIC(static) inline void Z80run(void) {
 
 		PCX = PC;
 
-#if defined(INSTANTIABLE_CPU_Z80RUN_CALLBACK)
-		Z80run_callback();
+#if defined(INSTANTIABLE_CPU_Z80RUN_SINGLE_CYCLE)
+		if(! INSTANTIABLE_firstCycle) {
+			break;
+		}
+		INSTANTIABLE_firstCycle = false;
 #endif
 
 #ifdef iDEBUG
@@ -1494,6 +1507,15 @@ INSTANTIABLE_CPU_NON_PUBLIC(static) inline void Z80run(void) {
 		fputs(iLogBuffer, iLogFile);
 		fclose(iLogFile);
 #endif
+
+		/* "Z80 User's Manual - INTERRUPT RESPONSE"
+		   > When an EI instruction is executed, any pending interrupt
+		   > request is not accepted until after the instruction following
+		   > EI is executed.  */
+		if(EI_Delay) {
+			EI_Delay = 0;
+			IFF = 3;
+		}
 
 		switch (RAM_PP(PC)) {
 
@@ -2062,6 +2084,7 @@ INSTANTIABLE_CPU_NON_PUBLIC(static) inline void Z80run(void) {
 			break;
 
 		case 0x76:      /* HALT */
+			HALT = 1;
 #ifdef DEBUG
 			_puts("\r\n::CPU HALTED::");	// A halt is a good indicator of broken code
 			_puts("Press any key...");
@@ -2680,6 +2703,7 @@ INSTANTIABLE_CPU_NON_PUBLIC(static) inline void Z80run(void) {
 				temp = acu | (1 << ((op >> 3) & 7));
 				break;
 			}
+			if((op & 0xc0) == 0x40) { break; }	/// If operation is BIT, don't write anything
 			switch (op & 7) {
 
 			case 0:
@@ -3333,6 +3357,7 @@ INSTANTIABLE_CPU_NON_PUBLIC(static) inline void Z80run(void) {
 					temp = acu | (1 << ((op >> 3) & 7));
 					break;
 				}
+				if((op & 0xc0) == 0x40) { break; }	/// If operation is BIT, don't write anything
 				switch (op & 7) {
 
 				case 0:
@@ -3534,7 +3559,7 @@ INSTANTIABLE_CPU_NON_PUBLIC(static) inline void Z80run(void) {
 				break;
 
 			case 0x46:      /* IM 0 */
-							/* interrupt mode 0 */
+				IM = 0;		/* interrupt mode 0 */
 				break;
 
 			case 0x47:      /* LD I,A */
@@ -3601,7 +3626,7 @@ INSTANTIABLE_CPU_NON_PUBLIC(static) inline void Z80run(void) {
 				break;
 
 			case 0x56:      /* IM 1 */
-							/* interrupt mode 1 */
+				IM = 1;		/* interrupt mode 1 */
 				break;
 
 			case 0x57:      /* LD A,I */
@@ -3634,7 +3659,7 @@ INSTANTIABLE_CPU_NON_PUBLIC(static) inline void Z80run(void) {
 				break;
 
 			case 0x5e:      /* IM 2 */
-							/* interrupt mode 2 */
+				IM = 2;		/* interrupt mode 2 */
 				break;
 
 			case 0x5f:      /* LD A,R */
@@ -4034,7 +4059,8 @@ INSTANTIABLE_CPU_NON_PUBLIC(static) inline void Z80run(void) {
 			break;
 
 		case 0xfb:      /* EI */
-			IFF = 3;
+		/*	IFF = 3; */
+			EI_Delay = 1;	/* IFF will be changed after single instruction delay */
 			break;
 
 		case 0xfc:      /* CALL M,nnnn */
@@ -4570,6 +4596,7 @@ INSTANTIABLE_CPU_NON_PUBLIC(static) inline void Z80run(void) {
 					temp = acu | (1 << ((op >> 3) & 7));
 					break;
 				}
+				if((op & 0xc0) == 0x40) { break; }	/// If operation is BIT, don't write anything
 				switch (op & 7) {
 
 				case 0:
