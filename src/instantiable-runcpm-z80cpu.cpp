@@ -64,7 +64,7 @@ struct MySystem {
 
 	void loadCimFile(uint16_t addr, const uint8_t* file, size_t fileSizeInBytes) {
 		loadData(addr, file, fileSizeInBytes);
-		RunCpmCpu::CpuStatus s = cpu.getCpuStatus();
+		auto s = cpu.getCpuStatus();
 		s.PC = addr;
 		cpu.setCpuStatus(s);
 	}
@@ -103,11 +103,11 @@ struct MySystem {
 		isHalt = (cpu.getCpuStatus().getHALT() != 0);
 	}
 
-	RunCpmCpu::CpuStatus getCpuStatus() const {
+	RunCpmZ80Cpu::CpuStatus getCpuStatus() const {
 		return cpu.getCpuStatus();
 	}
 
-	RunCpmCpu::Cpu cpu;
+	RunCpmZ80Cpu::Cpu cpu;
 	std::vector<uint8_t> ram;
 	int64_t callbackCounter = 0;
 	bool isHalt = false;
