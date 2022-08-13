@@ -101,7 +101,6 @@ namespace RunCpmZ80Cpu {
 				// - When the CPU accepts a maskable interrupt, both IFF1 and IFF2 are automatically reset,
 				//   inhibiting further interrupts until the programmer issues a new EI instruction.
 				cpuImpl->IFF = 0;
-//				cpuImpl->IFF &= ~1;
 			}
 		}
 
