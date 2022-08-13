@@ -26,7 +26,7 @@ void setupMinimumBdosForZexall(uint16_t bdosAddr, uint8_t IO_char, const std::fu
 		static_cast<uint8_t>(bdosAddr >> 8),
 	};
 
-	const uint8_t picoBdos[] = {
+	const uint8_t bdos[] = {
 			            //  .org 0xfc00
 		0x79,           //      ld  a,c
 		0xFE, 0x09,     //      cp  0x09
@@ -46,7 +46,7 @@ void setupMinimumBdosForZexall(uint16_t bdosAddr, uint8_t IO_char, const std::fu
 	};
 
 	for(int i = 0; i < std::ssize(boot); ++i) { memWrite(i, boot[i]); }
-	for(int i = 0; i < std::ssize(picoBdos); ++i) { memWrite(bdosAddr + i, picoBdos[i]); }
+	for(int i = 0; i < std::ssize(bdos); ++i) { memWrite(bdosAddr + i, bdos[i]); }
 }
 
 
