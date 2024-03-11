@@ -34,7 +34,7 @@ cl.exe /std:c++20 /O2 /EHsc src\instantiable-runcpm-z80cpu.cpp src\runcpm_cpu.cp
 
 - Windows (LLVM)
 
-The default build script `run.cmd` automatically setup LLVM environment under `%PUBLIC%\Documents\DevEnv`
+The default build script `run.cmd` automatically setup LLVM environment under `%PUBLIC%\Documents\DevEnv_instantiable-runcpm-z80cpu"`
 
 ```
 .\run.cmd
