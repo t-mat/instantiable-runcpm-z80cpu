@@ -96,7 +96,7 @@ struct MySystem {
 	void runSingleCycle() {
 	    if((callbackCounter % (1024 * 1024 * 64)) == 0) {
 			const auto s = cpu.getCpuStatus();
-	        printf("Cycle=%16zd, PC=%04X, SP=%04X, AF=%04X, BC=%04X, DE=%04X, HL=%04X\n", callbackCounter, s.PC, s.SP, s.AF, s.BC, s.DE, s.HL);
+	        printf("Cycle=%16lld, PC=%04X, SP=%04X, AF=%04X, BC=%04X, DE=%04X, HL=%04X\n", callbackCounter, s.PC, s.SP, s.AF, s.BC, s.DE, s.HL);
 	    }
 		cpu.runSingleCycle();
 		++callbackCounter;
