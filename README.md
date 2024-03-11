@@ -23,9 +23,19 @@ clang++ -std=c++17 -O3 src/instantiable-runcpm-z80cpu.cpp
 ./a.out external/zexall/zexall.com
 ```
 
-- VC++2019
+- VC++2022
+
+Input the following command in the "Developer Command Prompt for VS2022"
 
 ```
-.\build.bat
-x64\Release\instantiable-runcpm-z80cpu.exe external\zexall\zexall.com
+cl.exe /std:c++20 /O2 src\instantiable-runcpm-z80cpu.cpp src\runcpm_cpu.cpp
+.\instantiable-runcpm-z80cpu.exe external\zexall\zexall.com
+```
+
+- Windows (LLVM)
+
+The default build script `run.cmd` automatically setup LLVM environment under `%PUBLIC%\Documents\DevEnv`
+
+```
+.\run.cmd
 ```
