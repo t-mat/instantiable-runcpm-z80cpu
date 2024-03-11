@@ -28,7 +28,7 @@ clang++ -std=c++17 -O3 src/instantiable-runcpm-z80cpu.cpp
 Input the following command in the "Developer Command Prompt for VS2022"
 
 ```
-cl.exe /std:c++20 /O2 src\instantiable-runcpm-z80cpu.cpp src\runcpm_cpu.cpp
+cl.exe /std:c++20 /O2 /EHsc src\instantiable-runcpm-z80cpu.cpp src\runcpm_cpu.cpp
 .\instantiable-runcpm-z80cpu.exe external\zexall\zexall.com
 ```
 
